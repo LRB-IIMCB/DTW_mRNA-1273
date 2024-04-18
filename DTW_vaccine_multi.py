@@ -9,19 +9,12 @@ from dtaidistance import dtw
 
 from ont_fast5_api.fast5_interface import get_fast5_file
 os.environ['HDF5_USE_FILE_LOCKING'] = 'FALSE'
-from matplotlib import rcParams
 import glob
 import click
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-import matplotlib.cm as cm
 
 from itertools import repeat
 
 import numpy as np
-import numpy.testing as npt
-import matplotlib.pyplot as plt
-
 
 from scipy import stats
 import pandas as pd
@@ -72,19 +65,21 @@ def find_sim(ref,fast5_path,verbose=True,cutoff=20000):
 @click.command()
 @click.option('--inpath', '-i', help='The input fast5 directory path')
 @click.option('--ref_signal', '-r', help='reference signal')
+@click.option('--shift_signal', '-s', default=0, help='shift reference signal by number of points')
 @click.option('--output', '-o', help='output file')
 @click.option('--threads', '-t', default=1, help='parallel threads to use')
 @click.option('--verbose', '-v', is_flag=True, default=False, help='Be verbose?')
 
-def main(inpath,ref_signal,output,threads,verbose):
+def main(inpath,ref_signal,output,shift_signal,threads,verbose):
 
     # load reference signal
     ref_sig = np.loadtxt(ref_signal,dtype="float")
-    ref_sig = ref_sig[1:5000].astype(float) # get only first 5000 signal points
+    ref_sig = ref_sig[1+shift_signal:5000+shift_signal].astype(float) # get only first 5000 signal points
     ref_sig = signal.savgol_filter(ref_sig,51,3) # apply savitzky golay fiter
     ref_sig = stats.zscore(ref_sig) #zscore normalize signals
     print("Succesfully read reference signal")
-
+    if(shift_signal>0):
+        print("Reference signal was shifted by " + str(shift_signal) + " data points")
     fin_results = pd.DataFrame(columns=['read_id','distance','startidx','endidx']) # create pandas data.rame for results
 
     futures = [] # initialize futures
